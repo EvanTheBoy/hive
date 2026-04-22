@@ -116,6 +116,9 @@ class WorkerSessionAdapter:
     worker_path: Path | None = None
 
 
+QUEEN_PHASES: frozenset[str] = frozenset({"independent", "incubating", "working", "reviewing"})
+
+
 @dataclass
 class QueenPhaseState:
     """Mutable state container for queen operating phase.
@@ -131,7 +134,7 @@ class QueenPhaseState:
     that trigger phase transitions.
     """
 
-    phase: str = "independent"  # "independent", "incubating", "working", or "reviewing"
+    phase: str = "independent"  # one of QUEEN_PHASES
     independent_tools: list = field(default_factory=list)  # list[Tool]
     incubating_tools: list = field(default_factory=list)  # list[Tool]
     working_tools: list = field(default_factory=list)  # list[Tool]

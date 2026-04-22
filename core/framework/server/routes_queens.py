@@ -378,6 +378,8 @@ async def handle_select_queen_session(request: web.Request) -> web.Response:
 
 async def handle_new_queen_session(request: web.Request) -> web.Response:
     """POST /api/queen/{queen_id}/session/new -- create a fresh queen session."""
+    from framework.tools.queen_lifecycle_tools import QUEEN_PHASES
+
     queen_id = request.match_info["queen_id"]
     manager = request.app["manager"]
 
@@ -387,9 +389,25 @@ async def handle_new_queen_session(request: web.Request) -> web.Response:
     except FileNotFoundError:
         return web.json_response({"error": f"Queen '{queen_id}' not found"}, status=404)
 
-    body = await request.json() if request.can_read_body else {}
+    if request.can_read_body:
+        try:
+            body = await request.json()
+        except json.JSONDecodeError:
+            return web.json_response({"error": "Invalid JSON body"}, status=400)
+        if not isinstance(body, dict):
+            return web.json_response({"error": "Request body must be a JSON object"}, status=400)
+    else:
+        body = {}
     initial_prompt = body.get("initial_prompt")
     initial_phase = body.get("initial_phase") or "independent"
+    if initial_phase not in QUEEN_PHASES:
+        return web.json_response(
+            {
+                "error": f"Invalid initial_phase '{initial_phase}'",
+                "valid": sorted(QUEEN_PHASES),
+            },
+            status=400,
+        )
 
     session = await manager.create_session(
         initial_prompt=initial_prompt,

@@ -309,14 +309,20 @@ def _effective_enabled(
     queen_store: SkillOverrideStore | None,
     colony_store: SkillOverrideStore | None,
 ) -> bool:
-    # Colony explicit wins over queen explicit; either explicit wins over
-    # master switch + default. Keeps the UI's enable/disable toggle simple.
+    # Mirrors ``SkillsManager._apply_overrides`` so the UI's "enabled" column
+    # matches what the queen actually sees in her prompt. Colony explicit wins
+    # over queen explicit; either explicit wins over preset-off-by-default and
+    # over the ``all_defaults_disabled`` master switch.
     for store in (colony_store, queen_store):
         if store is None:
             continue
         entry = store.get(skill.name)
         if entry is not None and entry.enabled is not None:
             return entry.enabled
+    # Preset-scope capability packs ship OFF; they only appear in the queen's
+    # catalog after an explicit per-queen/colony opt-in.
+    if skill.source_scope == "preset":
+        return False
     for store in (colony_store, queen_store):
         if store is not None and store.all_defaults_disabled and skill.source_scope == "framework":
             return False
