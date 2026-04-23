@@ -337,21 +337,21 @@ class QueenPhaseState:
     def refresh_dynamic_suffix(self) -> str:
         """Rebuild and cache the dynamic system-prompt suffix.
 
-        The suffix contains recall blocks and the current date/time — the
-        pieces that genuinely change per user turn. Called from the
+        The suffix contains recall blocks only. Called from the
         CLIENT_INPUT_RECEIVED subscriber so the suffix is byte-stable across
-        every AgentLoop iteration within a single user turn. Also called on
-        phase transition so the timestamp reflects the transition moment.
+        every AgentLoop iteration within a single user turn.
+
+        Timestamps used to live here too; they were moved into the
+        conversation itself as a ``[YYYY-MM-DD HH:MM TZ]`` prefix on each
+        injected event (see ``drain_injection_queue``) so they ride on
+        byte-stable conversation history instead of busting the
+        per-turn system-prompt cache tail.
         """
         parts: list[str] = []
         if self._cached_global_recall_block:
             parts.append(self._cached_global_recall_block)
         if self._cached_queen_recall_block:
             parts.append(self._cached_queen_recall_block)
-        local = datetime.now().astimezone()
-        parts.append(
-            f"Current date and time: {local.strftime('%Y-%m-%d %H:%M %Z (UTC%z)')}"
-        )
         self._cached_dynamic_suffix = "\n\n".join(parts)
         return self._cached_dynamic_suffix
 

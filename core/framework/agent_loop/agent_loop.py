@@ -587,7 +587,12 @@ class AgentLoop(AgentProtocol):
 
             initial_message = self._build_initial_message(ctx)
             if initial_message:
-                await conversation.add_user_message(initial_message)
+                # Stamp with arrival time so the conversation has a
+                # temporal anchor for the first turn, matching the
+                # stamping done by drain_injection_queue for every
+                # subsequent event.
+                _stamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z")
+                await conversation.add_user_message(f"[{_stamp}] {initial_message}")
 
             await self._run_hooks("session_start", conversation, trigger=initial_message)
 
@@ -599,7 +604,8 @@ class AgentLoop(AgentProtocol):
             initial_message = self._build_initial_message(ctx)
             if not initial_message:
                 initial_message = "Hello"
-            await conversation.add_user_message(initial_message)
+            _stamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z")
+            await conversation.add_user_message(f"[{_stamp}] {initial_message}")
 
         # 2b. Restore spill counter from existing files (resume safety)
         self._restore_spill_counter()
